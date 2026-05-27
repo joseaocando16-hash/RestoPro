@@ -7,30 +7,29 @@ import type { Profile, Restaurant, Role } from '@/lib/supabase'
 
 const NAV_BY_ROLE: Record<Role, { href: string; label: string; icon: string }[]> = {
   owner: [
-    { href: '/dashboard',  label: 'Dashboard',  icon: '📊' },
-    { href: '/pedidos',    label: 'Pedidos',     icon: '🧾' },
-    { href: '/inventario', label: 'Inventario',  icon: '📦' },
-    { href: '/reportes',   label: 'Reportes',    icon: '📈' },
-    { href: '/alertas',    label: 'Alertas',     icon: '🔔' },
+    { href: '/dashboard',    label: 'Dashboard',    icon: '📊' },
+    { href: '/pedidos',      label: 'Pedidos',       icon: '🧾' },
+    { href: '/nuevo-pedido', label: 'Nuevo pedido',  icon: '➕' },
+    { href: '/menu',         label: 'Menú',          icon: '🍽️' },
+    { href: '/inventario',   label: 'Inventario',    icon: '📦' },
+    { href: '/reportes',     label: 'Reportes',      icon: '📈' },
+    { href: '/alertas',      label: 'Alertas',       icon: '🔔' },
   ],
   cajero: [
-    { href: '/caja',       label: 'Caja',        icon: '💳' },
-    { href: '/pedidos',    label: 'Pedidos',      icon: '🧾' },
+    { href: '/caja',         label: 'Caja',          icon: '💳' },
+    { href: '/pedidos',      label: 'Pedidos',        icon: '🧾' },
   ],
   cocina: [
-    { href: '/cocina',     label: 'Cocina',       icon: '👨‍🍳' },
+    { href: '/cocina',       label: 'Cocina',         icon: '👨‍🍳' },
   ],
   camarero: [
-    { href: '/mesas',      label: 'Mis mesas',    icon: '🪑' },
-    { href: '/nuevo-pedido', label: 'Nuevo pedido', icon: '➕' },
+    { href: '/mesas',        label: 'Mis mesas',      icon: '🪑' },
+    { href: '/nuevo-pedido', label: 'Nuevo pedido',   icon: '➕' },
   ],
 }
 
 const ROLE_LABEL: Record<Role, string> = {
-  owner:    'Administrador',
-  cajero:   'Cajero',
-  cocina:   'Cocina',
-  camarero: 'Camarero',
+  owner: 'Administrador', cajero: 'Cajero', cocina: 'Cocina', camarero: 'Camarero',
 }
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
@@ -39,16 +38,16 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const supabase = createClient()
   const [profile, setProfile] = useState<Profile | null>(null)
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null)
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     async function load() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.push('/login'); return }
-
       const { data: p } = await supabase.from('profiles').select('*').eq('id', user.id).single()
       if (!p) { router.push('/login'); return }
-
+      setIsSuperAdmin(p.is_super_admin || false)
       const { data: r } = await supabase.from('restaurants').select('*').eq('id', p.restaurant_id).single()
       setProfile(p)
       setRestaurant(r)
@@ -80,7 +79,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           <div className="text-sm font-semibold text-gray-900">🍽️ {restaurant?.name || 'RestoPro'}</div>
           <div className="text-xs text-gray-400 mt-0.5">{ROLE_LABEL[role]}</div>
         </div>
-        <nav className="flex-1 py-2">
+        <nav className="flex-1 py-2 overflow-y-auto">
           {nav.map(item => (
             <Link key={item.href} href={item.href}
               className={`sidebar-link ${pathname === item.href ? 'active' : ''}`}>
@@ -88,6 +87,17 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               <span>{item.label}</span>
             </Link>
           ))}
+          {isSuperAdmin && (
+            <>
+              <div className="px-4 py-2 mt-2 border-t border-gray-100">
+                <div className="text-xs text-gray-400 font-medium">Super Admin</div>
+              </div>
+              <Link href="/super-admin"
+                className={`sidebar-link ${pathname === '/super-admin' ? 'active' : ''}`}>
+                <span>⚙️</span><span>Restaurantes</span>
+              </Link>
+            </>
+          )}
         </nav>
         <div className="p-4 border-t border-gray-100">
           <div className="text-xs text-gray-500 truncate mb-1">{profile?.full_name}</div>
